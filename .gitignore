@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# Virtualenv
+.venv/
+venv/
+env/
+ENV/
+
+# Local config / secrets
+.env
+config.toml
+
+# rgprep runtime
+rgprep.db
+rgprep.db-journal
+rgprep.db-wal
+rgprep.db-shm
+out/
+*.local.toml
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

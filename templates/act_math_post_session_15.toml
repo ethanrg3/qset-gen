@@ -1,0 +1,14 @@
+# Heavy session-tie weighting — fires the day after a tutoring session.
+# resurface_floor=0 because the goal is consolidation of just-taught content.
+name = "ACT Math Post-Session 15"
+test = "ACT"
+size = 15
+sections = { Math = 1.0 }
+skill_distribution = { weak = 0.5, neutral = 0.4, strong = 0.1 }
+resurface_floor = 0.0
+session_tie_floor = 0.60
+new_question_floor = 0.40
+time_limit_min = 25
+allow_calculator = true
+no_streak_max = 2
+ordering = "interleaved"

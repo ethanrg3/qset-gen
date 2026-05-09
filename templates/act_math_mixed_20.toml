@@ -1,0 +1,12 @@
+name = "ACT Math Mixed 20"
+test = "ACT"
+size = 20
+sections = { Math = 1.0 }
+skill_distribution = { weak = 0.6, neutral = 0.3, strong = 0.1 }
+resurface_floor = 0.25
+session_tie_floor = 0.25
+new_question_floor = 0.40
+time_limit_min = 30
+allow_calculator = true
+no_streak_max = 2
+ordering = "interleaved"

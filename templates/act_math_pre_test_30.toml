@@ -1,0 +1,13 @@
+# Late-stage review — heavy resurface, lighter on session-tie.
+name = "ACT Math Pre-Test 30"
+test = "ACT"
+size = 30
+sections = { Math = 1.0 }
+skill_distribution = { weak = 0.6, neutral = 0.3, strong = 0.1 }
+resurface_floor = 0.50
+session_tie_floor = 0.15
+new_question_floor = 0.20
+time_limit_min = 45
+allow_calculator = true
+no_streak_max = 2
+ordering = "interleaved"

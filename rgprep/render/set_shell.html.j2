@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ student.name }} — {{ template.name }}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #111; }
+    #meta { color: #555; font-size: 0.9rem; margin-bottom: 1rem; }
+    #question-container { padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+    .choice { display: block; padding: 0.5rem; margin: 0.25rem 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+    .choice.selected { background: #e8f0fe; border-color: #4a90e2; }
+    nav#controls { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    button { padding: 0.5rem 1rem; cursor: pointer; }
+    #results { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div id="meta">
+    <strong>{{ student.name }}</strong> · {{ template.name }} · {{ questions|length }} questions · {{ template.time_limit_min }} min
+  </div>
+  <div id="question-container"></div>
+  <nav id="controls">
+    <button id="prev">← Prev</button>
+    <button id="mark">Mark for review</button>
+    <button id="next">Next →</button>
+    <button id="submit">Submit</button>
+  </nav>
+  <div id="results" hidden></div>
+
+  <script>
+    const SET_CONFIG = {
+      student_id: {{ student.student_id|tojson }},
+      set_id: {{ set_id|tojson }},
+      webhook_url: {{ webhook_url|tojson }},
+      webhook_secret: {{ webhook_secret|tojson }},
+      time_limit_sec: {{ template.time_limit_min * 60 }}
+    };
+    const QUESTIONS = {{ questions_payload|tojson }};
+    // SPA logic: render(currentIndex), record on selection, finalize on submit,
+    // POST to SET_CONFIG.webhook_url with Authorization: Bearer <webhook_secret>,
+    // show results. (Stub — to be implemented in render/render.py.)
+    document.getElementById("question-container").textContent =
+      "Renderer not yet implemented. " + QUESTIONS.length + " questions loaded.";
+  </script>
+</body>
+</html>

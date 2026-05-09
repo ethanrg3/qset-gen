@@ -1,0 +1,84 @@
+# rgprep configuration — copy to config.toml and edit. Secrets go in .env.
+
+[paths]
+cache_db = "rgprep.db"
+output_dir = "out"
+templates_dir = "templates"
+
+# §5.1 — per-question score weights. W_SESSION is high (second only to resurface)
+# because session content sits in the empirically optimal 1–6 day retrieval window.
+[scoring.weights]
+W_DIFF      = 1.0
+W_RESURFACE = 1.5
+W_PRIORITY  = 0.8
+W_SPACING   = 0.6
+W_SESSION   = 1.3
+W_RECENCY   = 2.0
+
+# §5.2 — difficulty fit falloff (scaled-score points to either side of target)
+[scoring.difficulty]
+falloff_points = 4.0
+target_offset_above_current = 1.0
+progress_fraction_floor = 0.2
+progress_fraction_ceil  = 1.0
+
+# §5.2 — resurface signal (days since miss → weight)
+[scoring.resurface]
+window_optimal_days   = [1, 6]    # 1.0
+window_secondary_days = [7, 21]   # 0.5
+window_tail_days      = [22, 60]  # 0.2
+
+# §5.2 — spacing (gap = days_since_skill / days_to_test)
+[scoring.spacing]
+optimal_gap   = [0.10, 0.30]   # 1.0
+secondary_gap = [0.05, 0.50]   # 0.5
+
+# §5.2 — session signal weights (per category) and decay window
+[scoring.session]
+window_introduced_days = 6     # full weight 1.0 within this window
+window_struggled_days  = 14    # full weight 0.9 within this window
+window_practiced_days  = 14    # full weight 0.5
+window_mastered_days   = 6     # full weight 0.3 (light maintenance)
+homework_directive_bonus = 0.4
+linear_decay = true
+
+# §5.2 — recency penalty (don't repeat correctly-answered questions)
+[scoring.recency]
+recent_days   = 7    # 1.0
+extended_days = 30   # 0.5
+
+# §6.4 — adaptive weak/strong recompute
+[adapt]
+alpha = 0.5            # rolling accuracy weight (last 20 attempts, exp-decayed)
+beta  = 0.4            # session struggle density weight
+gamma = 0.2            # session mastery density weight (subtracted)
+theta_weak   = 0.55    # weakness_score >= θ_weak → weak_skills
+theta_strong = 0.20    # weakness_score <= θ_strong → strong_skills
+min_evidence_points = 5
+rolling_window_attempts = 20
+session_decay_halflife_days = 14
+
+# §5.4 — cold start
+[cold_start]
+diagnostic_set_count = 3
+baseline_difficulty_band = 3.0   # ± from current_act_math
+
+# Notion DB IDs and secrets live in .env, not here.
+[notion]
+# These are looked up from environment variables at runtime; listed here for documentation.
+db_questions_env             = "NOTION_DB_QUESTIONS"
+db_students_env              = "NOTION_DB_STUDENTS"
+db_q_history_env             = "NOTION_DB_Q_HISTORY"
+db_session_signals_env       = "NOTION_DB_SESSION_SIGNALS"
+db_skill_taxonomy_env        = "NOTION_DB_SKILL_TAXONOMY"
+db_skill_status_history_env  = "NOTION_DB_SKILL_STATUS_HISTORY"
+
+[webhook]
+# WEBHOOK_BASE_URL and WEBHOOK_SECRET come from .env; baked into rendered HTML at generation time.
+host = "0.0.0.0"
+port = 8787
+
+[extractor]
+model = "claude-opus-4-7"
+max_tokens = 4096
+transcript_excerpt_chars = 4000

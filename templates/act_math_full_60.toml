@@ -1,0 +1,12 @@
+name = "ACT Math Full 60"
+test = "ACT"
+size = 60
+sections = { Math = 1.0 }
+skill_distribution = { weak = 0.5, neutral = 0.4, strong = 0.1 }
+resurface_floor = 0.20
+session_tie_floor = 0.15
+new_question_floor = 0.50
+time_limit_min = 60
+allow_calculator = true
+no_streak_max = 2
+ordering = "interleaved"
