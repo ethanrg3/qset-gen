@@ -1,4 +1,4 @@
-# rgprep-generator
+# qset-gen
 
 Notion-backed personalized ACT/SAT homework generator. Produces self-contained interactive HTML question sets per student, scored by a multi-signal algorithm grounded in cognitive-science evidence (interleaving, retrieval, spacing). Fed by Fathom session signals so homework reflects what just happened in the live tutoring session.
 
@@ -17,23 +17,40 @@ cp config.example.toml config.toml
 cp .env.example .env
 # fill in NOTION_TOKEN, ANTHROPIC_API_KEY, NOTION_DB_*, WEBHOOK_* in .env
 
-rgprep --help
+qset-gen --help
 ```
+
+### macOS troubleshooting
+
+On Darwin 25+, brew's Python 3.12 bottle is built against a newer libexpat than
+what ships with the system, so `python3.12 -m venv` fails during `ensurepip`
+with `Symbol not found: _XML_SetAllocTrackerActivationThreshold`. Fix:
+
+```bash
+brew install expat
+# Pre-create the venv with brew's libexpat shimmed in:
+DYLD_LIBRARY_PATH=/usr/local/opt/expat/lib python3.12 -m venv .venv
+# Then bake the same env var into the activate script so future activations work:
+echo 'export DYLD_LIBRARY_PATH="/usr/local/opt/expat/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"' >> .venv/bin/activate
+```
+
+Cleaner long-term: `brew install --build-from-source python@3.12` — slower but
+removes the need for the `DYLD_LIBRARY_PATH` shim entirely.
 
 ## CLI
 
 ```bash
 # Pull a fresh snapshot from Notion into the local SQLite cache
-rgprep refresh-cache
+qset-gen refresh-cache
 
 # Generate a homework set
-rgprep generate --student "Hank" --template act_math_mixed_20
+qset-gen generate --student "Hank" --template act_math_mixed_20
 
 # Ingest a Fathom transcript (writes Session Signals, recomputes weak/strong)
-rgprep ingest-session --transcript ./fathom_2026-05-08_hank.txt --student "Hank" --session-date 2026-05-08
+qset-gen ingest-session --transcript ./fathom_2026-05-08_hank.txt --student "Hank" --session-date 2026-05-08
 
 # Run the submission webhook locally
-rgprep webhook
+qset-gen webhook
 ```
 
 ## How it works
@@ -62,10 +79,10 @@ Weights and rules are not arbitrary — each maps to a finding in the literature
 
 ## Project layout
 
-See `rgprep_question_generator_plan.md` (v2 plan) for full specification — schema (§4), scoring (§5), session ingestion (§6), templates (§7), rendering + webhook (§8), phasing (§9).
+See `rgprep_question_generator_plan.md` (v2 plan, original name preserved) for full specification — schema (§4), scoring (§5), session ingestion (§6), templates (§7), rendering + webhook (§8), phasing (§9).
 
 ```
-rgprep/
+qset_gen/
 ├── cli.py              # Typer commands
 ├── notion_client.py    # Notion read/write
 ├── cache.py            # SQLite mirror

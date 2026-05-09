@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from rgprep.models import Question, SetTemplate
+from qset_gen.models import Question, SetTemplate
 
 
 def test_question_difficulty_mid(sample_questions):

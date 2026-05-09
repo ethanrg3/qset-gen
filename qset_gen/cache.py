@@ -1,6 +1,6 @@
 """SQLite cache mirroring Notion. Plan §4.5.
 
-The generator pulls Notion data into rgprep.db on each run and reads from there.
+The generator pulls Notion data into qset.db on each run and reads from there.
 TTL-based; force refresh with --refresh.
 """
 

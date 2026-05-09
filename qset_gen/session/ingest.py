@@ -1,4 +1,4 @@
-"""Transcript → Session Signals → recompute. Plan §6.1."""
+"""Transcript → Session Signals → recompute. Plan §6.1 (`qset-gen ingest-session`)."""
 
 from __future__ import annotations
 

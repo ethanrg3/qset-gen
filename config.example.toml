@@ -1,7 +1,7 @@
-# rgprep configuration — copy to config.toml and edit. Secrets go in .env.
+# qset-gen configuration — copy to config.toml and edit. Secrets go in .env.
 
 [paths]
-cache_db = "rgprep.db"
+cache_db = "qset.db"
 output_dir = "out"
 templates_dir = "templates"
 

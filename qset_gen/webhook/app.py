@@ -8,7 +8,7 @@ POST /submit
 
 POST /sessions   (optional convenience for later)
   body: { student_id, session_date, transcript }
-  → runs the same path as `rgprep ingest-session`
+  → runs the same path as `qset-gen ingest-session`
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ..models import SubmitPayload
 from .auth import require_secret
 
-app = FastAPI(title="rgprep webhook", version="0.1.0")
+app = FastAPI(title="qset-gen webhook", version="0.1.0")
 
 # Permissive CORS — generated HTML files are opened from disk (Origin: null).
 app.add_middleware(

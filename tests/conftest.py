@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from rgprep.models import Question, SessionSignals, Student
+from qset_gen.models import Question, SessionSignals, Student
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

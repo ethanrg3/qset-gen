@@ -1,21 +1,21 @@
 """Typer CLI surface — plan §9 Phase 1.
 
 Commands:
-  rgprep generate --student NAME --template TEMPLATE
-  rgprep ingest-session --transcript PATH --student NAME --session-date YYYY-MM-DD
-  rgprep refresh-cache
-  rgprep webhook
+  qset-gen generate --student NAME --template TEMPLATE
+  qset-gen ingest-session --transcript PATH --student NAME --session-date YYYY-MM-DD
+  qset-gen refresh-cache
+  qset-gen webhook
 """
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 
 import typer
 
 app = typer.Typer(
-    name="rgprep",
+    name="qset-gen",
     help="Personalized ACT/SAT homework generator (Notion-backed).",
     no_args_is_help=True,
 )
@@ -36,7 +36,9 @@ def generate(
 def ingest_session(
     transcript: Path = typer.Option(..., "--transcript", help="Path to Fathom transcript text file."),
     student: str = typer.Option(..., "--student", "-s", help="Student name."),
-    session_date: date = typer.Option(..., "--session-date", help="Session date (YYYY-MM-DD)."),
+    session_date: datetime = typer.Option(
+        ..., "--session-date", formats=["%Y-%m-%d"], help="Session date (YYYY-MM-DD)."
+    ),
 ) -> None:
     """Extract pedagogical signals from a Fathom transcript and write them to Notion."""
     raise NotImplementedError("ingest-session: not yet implemented (Phase 1)")
@@ -57,7 +59,7 @@ def webhook(
     """Run the FastAPI submission webhook locally."""
     import uvicorn
 
-    uvicorn.run("rgprep.webhook.app:app", host=host, port=port, reload=reload)
+    uvicorn.run("qset_gen.webhook.app:app", host=host, port=port, reload=reload)
 
 
 if __name__ == "__main__":

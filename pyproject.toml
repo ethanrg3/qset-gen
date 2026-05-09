@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "rgprep-generator"
+name = "qset-gen"
 version = "0.1.0"
 description = "Notion-backed personalized ACT/SAT homework generator with session-grounded scoring"
 readme = "README.md"
@@ -33,10 +33,10 @@ dev = [
 ]
 
 [project.scripts]
-rgprep = "rgprep.cli:app"
+qset-gen = "qset_gen.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["rgprep"]
+packages = ["qset_gen"]
 
 [tool.ruff]
 line-length = 100

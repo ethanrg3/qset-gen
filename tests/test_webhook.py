@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setenv("WEBHOOK_SECRET", "test-secret")
-    from rgprep.webhook.app import app
+    from qset_gen.webhook.app import app
 
     return TestClient(app)
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from rgprep.selection.templates import list_templates, load_template
+from qset_gen.selection.templates import list_templates, load_template
 
 
 def test_all_templates_load(templates_dir):

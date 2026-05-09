@@ -20,11 +20,11 @@ ENV/
 .env
 config.toml
 
-# rgprep runtime
-rgprep.db
-rgprep.db-journal
-rgprep.db-wal
-rgprep.db-shm
+# qset-gen runtime
+qset.db
+qset.db-journal
+qset.db-wal
+qset.db-shm
 out/
 *.local.toml
 

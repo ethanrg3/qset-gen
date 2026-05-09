@@ -3,7 +3,7 @@
 Calls claude-opus-4-7 with the extraction prompt + transcript, validates the JSON
 response against SessionExtraction, and returns the structured object.
 
-Reuse: this same function backs both `rgprep ingest-session` and the existing
+Reuse: this same function backs both `qset-gen ingest-session` and the existing
 Fathom progress-report generator (plan §6.3) — one LLM call, two artifacts.
 """
 
