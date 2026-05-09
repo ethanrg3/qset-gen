@@ -7,8 +7,9 @@ Single-tutor system, ~5–15 concurrent students. v1 covers ACT Math; architectu
 ## Quickstart
 
 ```bash
-# Requires Python 3.11+
-python3 -m venv .venv
+# Requires Python 3.12 (pinned in .python-version)
+# macOS: brew install python@3.12
+python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 
