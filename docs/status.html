@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>qset-gen — Project Status</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --panel: #ffffff;
+      --text: #111418;
+      --muted: #5b6573;
+      --border: #e3e6eb;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --done: #16a34a;
+      --done-soft: #dcfce7;
+      --warn: #d97706;
+      --warn-soft: #fef3c7;
+      --blocked: #dc2626;
+      --blocked-soft: #fee2e2;
+      --code-bg: #f4f5f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1080px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* ----- header ----- */
+    header { padding: 2rem 0 1rem; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+    h1 { margin: 0 0 0.25rem; font-size: 1.85rem; letter-spacing: -0.01em; }
+    .subtitle { color: var(--muted); margin: 0; font-size: 1.05rem; }
+    .header-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; color: var(--muted); font-size: 0.9rem; }
+    .header-meta code { background: var(--code-bg); padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.85em; }
+
+    /* ----- sections ----- */
+    section { margin: 2.5rem 0; }
+    h2 { font-size: 1.3rem; margin: 0 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: -0.005em; }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.6rem; color: var(--text); }
+    p.note { color: var(--muted); font-size: 0.92rem; margin: 0.25rem 0 1rem; }
+
+    /* ----- stats grid ----- */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+    .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; }
+    .stat .num { font-size: 1.85rem; font-weight: 700; letter-spacing: -0.01em; }
+    .stat .num.done { color: var(--done); }
+    .stat .num.warn { color: var(--warn); }
+    .stat .label { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+    /* ----- progress bar ----- */
+    .progress { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; margin-top: 0.75rem; }
+    .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 0.5rem; }
+    .progress-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--done)); border-radius: 4px; }
+    .progress-row { display: flex; justify-content: space-between; align-items: baseline; }
+    .progress-row strong { font-size: 1rem; }
+    .progress-row .muted { color: var(--muted); font-size: 0.88rem; }
+
+    /* ----- architecture loops ----- */
+    .loops { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    .loop {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .loop h3 { margin-top: 0; display: flex; align-items: center; gap: 0.5rem; }
+    .loop-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.75rem; font-size: 0.92rem; }
+    .node { padding: 0.4rem 0.7rem; border-radius: 5px; border: 1px solid var(--border); background: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; white-space: nowrap; }
+    .node.done { background: var(--done-soft); border-color: var(--done); color: #14532d; }
+    .node.blocked { background: var(--blocked-soft); border-color: var(--blocked); color: #7f1d1d; }
+    .node.warn { background: var(--warn-soft); border-color: var(--warn); color: #78350f; }
+    .arrow { color: var(--muted); font-size: 1rem; }
+
+    /* ----- module table ----- */
+    table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    thead th { background: #f4f5f7; text-align: left; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); padding: 0.55rem 0.85rem; }
+    tbody td { padding: 0.65rem 0.85rem; border-top: 1px solid var(--border); font-size: 0.92rem; vertical-align: top; }
+    tbody td.path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; }
+    tbody td.tests { font-variant-numeric: tabular-nums; }
+    tbody tr:hover { background: #fafbfc; }
+
+    /* ----- badge ----- */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .badge.done { background: var(--done-soft); color: #14532d; }
+    .badge.warn { background: var(--warn-soft); color: #78350f; }
+    .badge.blocked { background: var(--blocked-soft); color: #7f1d1d; }
+    .badge.todo { background: #eef2f7; color: #475569; }
+    .badge.dot::before { content: "●"; margin-right: 0.3rem; font-size: 0.6rem; vertical-align: middle; }
+
+    /* ----- DB checklist ----- */
+    .db-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; }
+    .db { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; }
+    .db.exists { border-left: 3px solid var(--done); }
+    .db.new { border-left: 3px solid var(--warn); }
+    .db.augment { border-left: 3px solid var(--accent); }
+    .db h4 { margin: 0; font-size: 1rem; display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+    .db .fields { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--muted); }
+    .db .fields code { background: var(--code-bg); padding: 0.05rem 0.3rem; border-radius: 3px; font-size: 0.95em; color: var(--text); }
+
+    /* ----- next-steps list ----- */
+    ol.steps { list-style: none; padding: 0; counter-reset: step; }
+    ol.steps > li {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem 1rem 3.4rem;
+      margin-bottom: 0.75rem;
+      position: relative;
+      counter-increment: step;
+    }
+    ol.steps > li::before {
+      content: counter(step);
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      width: 1.8rem;
+      height: 1.8rem;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    ol.steps > li.done::before { background: var(--done); content: "✓"; }
+    ol.steps h3 { margin: 0 0 0.3rem; font-size: 1.02rem; }
+    ol.steps p { margin: 0.2rem 0; font-size: 0.92rem; color: var(--text); }
+    ol.steps .meta { color: var(--muted); font-size: 0.85rem; }
+    ol.steps code { background: var(--code-bg); padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    ol.steps pre { background: var(--code-bg); padding: 0.7rem 0.85rem; border-radius: 6px; font-size: 0.82rem; overflow-x: auto; margin: 0.5rem 0; line-height: 1.4; }
+
+    /* ----- artifacts ----- */
+    .artifacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; }
+    .artifact { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; }
+    .artifact h4 { margin: 0 0 0.4rem; font-size: 1rem; }
+    .artifact p { margin: 0.2rem 0 0.6rem; color: var(--muted); font-size: 0.88rem; }
+    .artifact a { display: inline-block; color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 0.35rem 0.8rem; border: 1px solid var(--accent); border-radius: 5px; transition: background 0.1s; }
+    .artifact a:hover { background: var(--accent-soft); }
+    .artifact pre { background: var(--code-bg); padding: 0.6rem 0.75rem; border-radius: 5px; font-size: 0.78rem; overflow-x: auto; margin: 0.4rem 0 0; line-height: 1.4; max-height: 220px; }
+
+    /* ----- inline code & links ----- */
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+
+    /* ----- footer ----- */
+    footer { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+    @media (max-width: 640px) {
+      .container { padding: 1rem 0.85rem 3rem; }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>qset-gen — Project Status</h1>
+  <p class="subtitle">Notion-backed personalized ACT/SAT homework generator. Phase 1 (MVP) build report.</p>
+  <div class="header-meta">
+    <span>Branch <code>main</code> @ <code>d94add9</code></span>
+    <span>Repo <a href="https://github.com/ethanrg3/qset-gen" target="_blank" rel="noopener">github.com/ethanrg3/qset-gen</a></span>
+    <span>Phase 1 — non-Notion implementation complete</span>
+  </div>
+</header>
+
+<!-- ============== AT A GLANCE ============== -->
+<section>
+  <h2>At a glance</h2>
+  <div class="stats">
+    <div class="stat"><div class="num done">123</div><div class="label">Tests passing (0 skipped)</div></div>
+    <div class="stat"><div class="num done">17</div><div class="label">Modules implemented</div></div>
+    <div class="stat"><div class="num warn">1</div><div class="label">Module blocked on Notion</div></div>
+    <div class="stat"><div class="num">2,451</div><div class="label">Lines of Python (qset_gen/)</div></div>
+    <div class="stat"><div class="num">2,018</div><div class="label">Lines of tests</div></div>
+    <div class="stat"><div class="num">5</div><div class="label">Commits on main</div></div>
+  </div>
+
+  <div class="progress">
+    <div class="progress-row">
+      <strong>Phase 1 MVP progress</strong>
+      <span class="muted">~90% — Notion wiring is the only remaining blocker</span>
+    </div>
+    <div class="progress-bar"><span style="width: 90%"></span></div>
+  </div>
+</section>
+
+<!-- ============== ARCHITECTURE / LOOPS ============== -->
+<section>
+  <h2>The three loops</h2>
+  <p class="note">Plan §3. Each loop is independent: session ingestion, set generation, and set submission all converge on the same Student.weak_skills/strong_skills state. Green nodes are implemented; amber nodes need Notion DB IDs or env vars.</p>
+
+  <div class="loops">
+
+    <div class="loop">
+      <h3><span class="badge done dot">Session loop</span></h3>
+      <p class="note">Fires after each tutoring session via <code>qset-gen ingest-session</code>. Writes one row to Session Signals; recomputes weak/strong.</p>
+      <div class="loop-flow">
+        <span class="node">Fathom transcript</span>
+        <span class="arrow">→</span>
+        <span class="node done">extractor.py (Anthropic, injectable client)</span>
+        <span class="arrow">→</span>
+        <span class="node warn">Session Signals DB</span>
+        <span class="arrow">→</span>
+        <span class="node done">adapt/weak_strong.py</span>
+        <span class="arrow">→</span>
+        <span class="node warn">Student.weak/strong</span>
+      </div>
+    </div>
+
+    <div class="loop">
+      <h3><span class="badge done dot">Generation loop</span></h3>
+      <p class="note">Fires per homework request via <code>qset-gen generate</code>. Runs entirely off the local SQLite cache — no Notion roundtrip per set.</p>
+      <div class="loop-flow">
+        <span class="node warn">Notion DBs</span>
+        <span class="arrow">→</span>
+        <span class="node done">cache.py (SQLite)</span>
+        <span class="arrow">→</span>
+        <span class="node done">scoring.py (6 signals)</span>
+        <span class="arrow">→</span>
+        <span class="node done">constraints.py (floors + no-streak)</span>
+        <span class="arrow">→</span>
+        <span class="node done">render/ (self-contained HTML)</span>
+      </div>
+    </div>
+
+    <div class="loop">
+      <h3><span class="badge done dot">Submission loop</span></h3>
+      <p class="note">Student opens the HTML, completes it, clicks Submit. The HTML POSTs to the FastAPI webhook with a Bearer token baked in at render time.</p>
+      <div class="loop-flow">
+        <span class="node done">HTML SPA</span>
+        <span class="arrow">→</span>
+        <span class="node done">webhook/app.py /submit</span>
+        <span class="arrow">→</span>
+        <span class="node warn">Q-History DB</span>
+        <span class="arrow">→</span>
+        <span class="node done">adapt/weak_strong.py</span>
+        <span class="arrow">→</span>
+        <span class="node warn">Student.weak/strong</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============== MODULE STATUS ============== -->
+<section>
+  <h2>Module status</h2>
+  <p class="note">17 modules built, 1 blocked. Every "done" row carries unit + integration tests; the blocked row is gated by your Notion DB IDs (see Next Steps).</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Module</th>
+        <th>Status</th>
+        <th>Tests</th>
+        <th>What it does</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="path">qset_gen/models.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">3</td>
+        <td>Pydantic models for every Notion row + extraction schema.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/selection/scoring.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">29</td>
+        <td>All 6 signals (plan §5.2): difficulty fit, resurface, priority, spacing, session, recency, plus composed score().</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/selection/constraints.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">16</td>
+        <td>Constraint-aware sampler: floors, no-streak, section mix (plan §5.3).</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/selection/cold_start.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">4</td>
+        <td>Detect new students; zero out W_RESURFACE/W_SESSION; flatten skill distribution (plan §5.4).</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/selection/templates.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">3</td>
+        <td>Load TOML set templates. 4 ACT Math templates shipped.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/adapt/weak_strong.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">14</td>
+        <td>Adaptive weak/strong recompute (plan §6.4): exp-decayed accuracy + session struggle/mastery densities + evidence-gated promotion.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/cache.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">10</td>
+        <td>Typed SQLite cache (Questions, Students, Q-History, Session Signals, Skill Taxonomy). Idempotent upserts.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/render/render.py + set_shell.html.j2</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">5</td>
+        <td>Single-file HTML SPA: render, mark-for-review, timer, submit, results screen with per-skill + resurface breakdown.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/session/extractor.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">8</td>
+        <td>Anthropic call with injectable client. Tolerates fenced/wrapped JSON. ExtractionError on schema miss.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/session/prompt.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">—</td>
+        <td>System message template + taxonomy injection (plan §6.2).</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/session/directives.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">7</td>
+        <td>Free-text directive → skill_id matcher (substring + word-stem fallback).</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/session/ingest.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">4</td>
+        <td>Orchestrates transcript → extract → write signals → recompute → persist deltas.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/webhook/app.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">8</td>
+        <td>FastAPI /submit + /healthz. Dependency-injected gateway so tests use InMemoryGateway.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/webhook/auth.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">2</td>
+        <td>Shared-secret Bearer auth. Constant-time compare.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/webhook/summary.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">—</td>
+        <td>Score / by_skill / resurface_accuracy summary builder (pure).</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/config.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">8</td>
+        <td>config.toml + .env loader. NotionDbIds.missing() introspection.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/cli.py</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">3</td>
+        <td>generate / ingest-session / refresh-cache / webhook commands wired end-to-end.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/notion_client.py — NotionGateway (Protocol) + InMemoryGateway</td>
+        <td><span class="badge done">done</span></td>
+        <td class="tests">9</td>
+        <td>Structural type + working in-memory fake. Used by tests and by local-cache-only runs.</td>
+      </tr>
+      <tr>
+        <td class="path">qset_gen/notion_client.py — NotionGatewayLive</td>
+        <td><span class="badge blocked">blocked</span></td>
+        <td class="tests">0</td>
+        <td>Real Notion-backed gateway. Methods raise NotImplementedError pending DB IDs + sample row JSON.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============== NOTION DATA MODEL ============== -->
+<section>
+  <h2>Notion data model</h2>
+  <p class="note">Six databases. Three exist; three need creating; the existing Students DB likely needs some new properties.</p>
+
+  <div class="db-grid">
+    <div class="db exists">
+      <h4>Questions <span class="badge done">exists</span></h4>
+      <p class="fields">Already in your workspace. Fields used: <code>question_id</code> (Title), <code>test</code>, <code>section</code>, <code>skill_tag</code> (Relation), <code>difficulty_low</code>/<code>difficulty_high</code>, <code>html_render</code>, <code>answer_key</code>, <code>explanation_html</code>, <code>time_target_sec</code>, <code>active</code>.</p>
+    </div>
+
+    <div class="db augment">
+      <h4>Students <span class="badge warn">augment</span></h4>
+      <p class="fields">Exists; confirm these properties: <code>current_act_math</code>, <code>target_act_math</code>, <code>test_date</code>, <code>weak_skills</code> (Relation→Skill Taxonomy, multi), <code>strong_skills</code> (Relation, multi), <code>last_set_generated_at</code>, <code>last_session_at</code>.</p>
+    </div>
+
+    <div class="db exists">
+      <h4>Skill Taxonomy <span class="badge done">exists</span></h4>
+      <p class="fields">The 75-skill ACT math taxonomy. Fields: <code>skill_id</code> (Title), <code>name</code>, <code>description</code>.</p>
+    </div>
+
+    <div class="db new">
+      <h4>Q-History <span class="badge warn">create</span></h4>
+      <p class="fields">One row per attempt. Fields: <code>attempt_id</code> (Title), <code>student</code> (Relation), <code>question</code> (Relation), <code>attempted_at</code> (Date+time), <code>correct</code> (Checkbox), <code>time_spent_sec</code> (Number), <code>set_id</code> (Text), <code>confidence</code> (Select).</p>
+    </div>
+
+    <div class="db new">
+      <h4>Session Signals <span class="badge warn">create</span></h4>
+      <p class="fields">One row per tutoring session. Fields: <code>session_id</code> (Title), <code>student</code> (Relation), <code>session_date</code> (Date), <code>duration_min</code>, <code>skills_practiced</code> (Relation, multi), <code>skills_struggled</code> (Relation, multi), <code>skills_introduced</code> (Relation, multi), <code>skills_mastered_today</code> (Relation, multi), <code>misconceptions</code> (Text), <code>homework_directives</code> (Text), <code>raw_transcript_excerpt</code> (Text), <code>extraction_model</code> (Text).</p>
+    </div>
+
+    <div class="db new">
+      <h4>Skill Status History <span class="badge warn">create</span></h4>
+      <p class="fields">Append-only audit log of weak/strong transitions. Fields: <code>change_id</code> (Title), <code>student</code> (Relation), <code>skill</code> (Relation), <code>prior_status</code> (Select), <code>new_status</code> (Select), <code>weakness_score</code> (Number), <code>triggered_by</code> (Text), <code>logged_at</code> (Date).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== NEXT STEPS ============== -->
+<section>
+  <h2>Next steps — your side</h2>
+  <p class="note">In order. Each step is independently small and reversible. After step 5 the system is end-to-end live.</p>
+
+  <ol class="steps">
+    <li>
+      <h3>Provision the three new Notion databases</h3>
+      <p>Create <code>Q-History</code>, <code>Session Signals</code>, and <code>Skill Status History</code> with the schemas above. Use the same workspace as Questions/Students/Skill Taxonomy.</p>
+      <p class="meta">~15 minutes. Lift the field lists from the Notion data model section above.</p>
+    </li>
+
+    <li>
+      <h3>Audit the Students DB</h3>
+      <p>Confirm the seven properties listed on the Students card exist with the right types. Add any that are missing.</p>
+      <p class="meta">~5 minutes.</p>
+    </li>
+
+    <li>
+      <h3>Create a Notion integration and share databases</h3>
+      <p>Go to <a href="https://www.notion.so/my-integrations" target="_blank">notion.so/my-integrations</a> → New integration (internal, no user info). Copy the token. Then on each of the six DBs: <code>…</code> menu → Connections → add your integration.</p>
+      <p class="meta">~5 minutes.</p>
+    </li>
+
+    <li>
+      <h3>Fill in <code>.env</code> at the project root</h3>
+<pre>cp .env.example .env
+# then edit:
+NOTION_TOKEN=ntn_xxxxxxxxxxxxx
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx
+NOTION_DB_QUESTIONS=&lt;32-char id from URL&gt;
+NOTION_DB_STUDENTS=&lt;...&gt;
+NOTION_DB_Q_HISTORY=&lt;...&gt;
+NOTION_DB_SESSION_SIGNALS=&lt;...&gt;
+NOTION_DB_SKILL_TAXONOMY=&lt;...&gt;
+NOTION_DB_SKILL_STATUS_HISTORY=&lt;...&gt;
+WEBHOOK_BASE_URL=https://&lt;your-host&gt;
+WEBHOOK_SECRET=&lt;long random string&gt;</pre>
+      <p>The DB ID is the 32-char string in the database URL between the workspace slug and <code>?v=</code>.</p>
+      <p class="meta">~5 minutes once you've copied the IDs from URLs.</p>
+    </li>
+
+    <li>
+      <h3>Pick a webhook host</h3>
+      <p>Easiest options, ranked by setup time:</p>
+      <p><strong>Cloudflare tunnel</strong> (~5 min, free, no account): <code>brew install cloudflared</code>, then <code>cloudflared tunnel --url http://localhost:8787</code>. Use the printed URL as <code>WEBHOOK_BASE_URL</code>.</p>
+      <p><strong>Fly.io</strong> (~15 min, free tier): <code>fly launch</code> from the repo.</p>
+      <p><strong>Render</strong> (~15 min): push to GitHub, point Render at <code>qset_gen.webhook.app:app</code>.</p>
+      <p class="meta">After this step the rendered HTML can actually POST results.</p>
+    </li>
+
+    <li>
+      <h3>Hand off three things for the NotionGatewayLive wiring</h3>
+      <p>When you come back to plug in the live gateway, I need from you:</p>
+      <p>1. A sample Question's raw Notion page (so I can read <code>skill_tag</code> correctly — is it a single Relation, a multi-Relation, etc.).</p>
+      <p>2. Confirmation that the Title of each Question is the human-readable ID like <code>ACTM-0421</code> (the models assume this; happy to flip to UUID-based).</p>
+      <p>3. Optional: one sanitized Fathom transcript so we can write the extraction snapshot test that locks the prompt against drift.</p>
+      <p class="meta">After that, NotionGatewayLive becomes ~150 LOC and the system goes live.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============== SAMPLE ARTIFACTS ============== -->
+<section>
+  <h2>Sample artifacts</h2>
+  <p class="note">Click through to see exactly what gets produced.</p>
+
+  <div class="artifacts">
+    <div class="artifact">
+      <h4>Rendered worksheet (5 questions, Hank demo)</h4>
+      <p>Self-contained HTML SPA. Open it in a browser to try the actual student-facing flow: select choices, mark for review, hit Submit (will show the fallback code since this points at a stub webhook).</p>
+      <a href="sample_set.html">Open sample_set.html →</a>
+    </div>
+
+    <div class="artifact">
+      <h4>Session Signals row (after ingest)</h4>
+      <p>What the extractor produces for one tutoring session.</p>
+<pre>{
+  "session_id": "sess_stu_hank_2026-05-14_a3f1",
+  "student_id": "stu_hank",
+  "session_date": "2026-05-14",
+  "duration_min": 60,
+  "skills_practiced": ["geo_circles", "alg_quadratics"],
+  "skills_struggled": ["geo_circles"],
+  "skills_introduced": ["trig_unit_circle"],
+  "skills_mastered_today": [],
+  "misconceptions": [
+    "confuses radius and diameter in area formula"
+  ],
+  "homework_directives": [
+    "practice 10 unit-circle problems this week"
+  ],
+  "raw_transcript_excerpt": "...",
+  "extraction_model": "claude-opus-4-7"
+}</pre>
+    </div>
+
+    <div class="artifact">
+      <h4>/submit response shape</h4>
+      <p>What the webhook returns to the HTML on submission.</p>
+<pre>{
+  "ok": true,
+  "summary": {
+    "score": {"correct": 14, "total": 20, "pct": 0.7},
+    "by_skill": {
+      "geo_circles": {"correct": 2, "total": 4},
+      "alg_quadratics": {"correct": 5, "total": 6}
+    },
+    "resurface_accuracy": {
+      "correct": 3, "total": 5
+    }
+  },
+  "changes": [
+    {
+      "skill_id": "geo_circles",
+      "prior_status": "weak",
+      "new_status": "neutral",
+      "weakness_score": 0.42
+    }
+  ]
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer>
+  <span>Generated for the qset-gen Phase 1 build report. Re-run <code>scripts/build_demo_worksheet.py</code> to refresh the sample HTML.</span>
+  <span>main @ d94add9</span>
+</footer>
+
+</div>
+</body>
+</html>
