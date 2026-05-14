@@ -5,43 +5,315 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{ student.name }} — {{ template.name }}</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #111; }
-    #meta { color: #555; font-size: 0.9rem; margin-bottom: 1rem; }
-    #question-container { padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
-    .choice { display: block; padding: 0.5rem; margin: 0.25rem 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+           max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #111; line-height: 1.5; }
+    header { display: flex; justify-content: space-between; align-items: baseline;
+             border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    #meta { color: #555; font-size: 0.9rem; }
+    #timer { font-variant-numeric: tabular-nums; font-weight: 600; color: #333; }
+    #progress { color: #888; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    #stem { font-size: 1.05rem; margin-bottom: 1rem; }
+    .choice { display: block; padding: 0.6rem 0.8rem; margin: 0.4rem 0;
+              border: 1px solid #ccc; border-radius: 6px; cursor: pointer;
+              background: #fff; transition: background 0.1s, border-color 0.1s; }
+    .choice:hover { background: #f6f9ff; }
     .choice.selected { background: #e8f0fe; border-color: #4a90e2; }
-    nav#controls { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    button { padding: 0.5rem 1rem; cursor: pointer; }
+    .choice.correct { background: #e6f4ea; border-color: #2e7d32; }
+    .choice.incorrect { background: #fdecea; border-color: #c62828; }
+    .choice .letter { display: inline-block; min-width: 1.5rem; font-weight: 600; }
+    nav#controls { margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    button { padding: 0.5rem 1rem; border: 1px solid #888; background: #fff;
+             border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+    button:hover { background: #f0f0f0; }
+    button.primary { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+    button.primary:hover { background: #1557b0; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.marked { background: #fff8e1; border-color: #f9a825; }
+    #review-list { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr)); gap: 0.3rem; }
+    .review-cell { padding: 0.4rem; text-align: center; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+    .review-cell.answered { background: #e8f0fe; border-color: #4a90e2; }
+    .review-cell.marked { background: #fff8e1; border-color: #f9a825; }
     #results { margin-top: 2rem; }
+    #results h2 { margin-top: 0; }
+    .summary-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+    details { margin: 0.5rem 0; padding: 0.5rem; background: #fafafa; border-radius: 4px; }
+    summary { cursor: pointer; font-weight: 600; }
+    .explanation { margin-top: 0.5rem; padding: 0.5rem; background: #fff; border-left: 3px solid #4a90e2; }
+    .fallback-code { font-family: monospace; padding: 1rem; background: #f4f4f4; border-radius: 4px;
+                     word-break: break-all; user-select: all; margin-top: 1rem; }
   </style>
 </head>
 <body>
-  <div id="meta">
-    <strong>{{ student.name }}</strong> · {{ template.name }} · {{ questions|length }} questions · {{ template.time_limit_min }} min
+  <header>
+    <div id="meta">
+      <strong>{{ student.name }}</strong> · {{ template.name }} · {{ questions|length }} questions
+    </div>
+    <div id="timer">--:--</div>
+  </header>
+
+  <div id="progress"></div>
+  <div id="question-container">
+    <div id="stem"></div>
+    <div id="choices"></div>
   </div>
-  <div id="question-container"></div>
+
   <nav id="controls">
     <button id="prev">← Prev</button>
-    <button id="mark">Mark for review</button>
     <button id="next">Next →</button>
-    <button id="submit">Submit</button>
+    <button id="mark">Mark for review</button>
+    <button id="review-toggle">Review</button>
+    <button id="submit" class="primary">Submit</button>
   </nav>
+
+  <div id="review-pane" hidden>
+    <h3>Review</h3>
+    <div id="review-list"></div>
+  </div>
+
   <div id="results" hidden></div>
 
   <script>
+  (function() {
+    "use strict";
+
     const SET_CONFIG = {
       student_id: {{ student.student_id|tojson }},
+      student_name: {{ student.name|tojson }},
       set_id: {{ set_id|tojson }},
       webhook_url: {{ webhook_url|tojson }},
       webhook_secret: {{ webhook_secret|tojson }},
       time_limit_sec: {{ template.time_limit_min * 60 }}
     };
     const QUESTIONS = {{ questions_payload|tojson }};
-    // SPA logic: render(currentIndex), record on selection, finalize on submit,
-    // POST to SET_CONFIG.webhook_url with Authorization: Bearer <webhook_secret>,
-    // show results. (Stub — to be implemented in render/render.py.)
-    document.getElementById("question-container").textContent =
-      "Renderer not yet implemented. " + QUESTIONS.length + " questions loaded.";
+
+    // ---- state ----
+    let current = 0;
+    const responses = {};   // question_id → selected letter
+    const marked = new Set();
+    const startedAt = {};   // question_id → ms timestamp first viewed
+    const timeSpent = {};   // question_id → total ms accumulated
+    const sessionStart = Date.now();
+    let submitted = false;
+
+    // ---- rendering ----
+    function renderQuestion() {
+      const q = QUESTIONS[current];
+      document.getElementById("progress").textContent =
+        "Question " + (current + 1) + " of " + QUESTIONS.length +
+        (marked.has(q.question_id) ? " · marked" : "");
+
+      // Insert stem (html_render already includes the stem and choice markup)
+      document.getElementById("stem").innerHTML = q.html_render;
+
+      // Find any pre-existing choices in html_render, or build them from q.choices if present.
+      let choices = document.getElementById("stem").querySelectorAll(".choice");
+      const choicesEl = document.getElementById("choices");
+      if (choices.length === 0 && Array.isArray(q.choices) && q.choices.length > 0) {
+        // Fallback: build choice elements from a choices array
+        choicesEl.innerHTML = "";
+        for (const c of q.choices) {
+          const el = document.createElement("div");
+          el.className = "choice";
+          el.dataset.letter = c.letter;
+          el.innerHTML = '<span class="letter">' + c.letter + '.</span> ' + c.text;
+          choicesEl.appendChild(el);
+        }
+        choices = choicesEl.querySelectorAll(".choice");
+      } else {
+        choicesEl.innerHTML = "";  // choices are inline in stem
+      }
+
+      // Restore selection state
+      choices.forEach((el) => {
+        const letter = el.dataset.letter || el.dataset.choice;
+        if (!letter) return;
+        if (responses[q.question_id] === letter) el.classList.add("selected");
+        else el.classList.remove("selected");
+        el.onclick = () => selectChoice(q.question_id, letter, choices);
+      });
+
+      // Track first-view time
+      if (!(q.question_id in startedAt)) startedAt[q.question_id] = Date.now();
+
+      document.getElementById("prev").disabled = current === 0;
+      document.getElementById("next").disabled = current === QUESTIONS.length - 1;
+      document.getElementById("mark").classList.toggle("marked", marked.has(q.question_id));
+    }
+
+    function selectChoice(qid, letter, allChoiceEls) {
+      responses[qid] = letter;
+      allChoiceEls.forEach((el) => {
+        const l = el.dataset.letter || el.dataset.choice;
+        el.classList.toggle("selected", l === letter);
+      });
+    }
+
+    function move(delta) {
+      stopTimerOnCurrent();
+      const next = current + delta;
+      if (next < 0 || next >= QUESTIONS.length) return;
+      current = next;
+      renderQuestion();
+    }
+
+    function stopTimerOnCurrent() {
+      const q = QUESTIONS[current];
+      if (q.question_id in startedAt) {
+        const delta = Date.now() - startedAt[q.question_id];
+        timeSpent[q.question_id] = (timeSpent[q.question_id] || 0) + delta;
+        delete startedAt[q.question_id];
+      }
+    }
+
+    function toggleMark() {
+      const q = QUESTIONS[current];
+      if (marked.has(q.question_id)) marked.delete(q.question_id);
+      else marked.add(q.question_id);
+      renderQuestion();
+    }
+
+    function renderReviewPane() {
+      const list = document.getElementById("review-list");
+      list.innerHTML = "";
+      QUESTIONS.forEach((q, i) => {
+        const cell = document.createElement("div");
+        cell.className = "review-cell";
+        cell.textContent = i + 1;
+        if (q.question_id in responses) cell.classList.add("answered");
+        if (marked.has(q.question_id)) cell.classList.add("marked");
+        cell.onclick = () => { stopTimerOnCurrent(); current = i; renderQuestion(); toggleReview(); };
+        list.appendChild(cell);
+      });
+    }
+
+    function toggleReview() {
+      const pane = document.getElementById("review-pane");
+      const wasHidden = pane.hasAttribute("hidden");
+      if (wasHidden) { renderReviewPane(); pane.removeAttribute("hidden"); }
+      else { pane.setAttribute("hidden", ""); }
+    }
+
+    // ---- timer ----
+    function tickTimer() {
+      const remaining = SET_CONFIG.time_limit_sec - Math.floor((Date.now() - sessionStart) / 1000);
+      const mm = Math.max(0, Math.floor(remaining / 60));
+      const ss = Math.max(0, remaining % 60);
+      document.getElementById("timer").textContent =
+        String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
+    }
+    setInterval(tickTimer, 1000);
+    tickTimer();
+
+    // ---- submission ----
+    function buildAttempts() {
+      stopTimerOnCurrent();
+      return QUESTIONS.map((q) => ({
+        question_id: q.question_id,
+        selected: responses[q.question_id] || null,
+        correct: responses[q.question_id] === q.answer_key,
+        time_spent_sec: Math.round((timeSpent[q.question_id] || 0) / 1000)
+      }));
+    }
+
+    async function submitSet() {
+      if (submitted) return;
+      const unanswered = QUESTIONS.filter((q) => !(q.question_id in responses)).length;
+      if (unanswered > 0 && !confirm(unanswered + " unanswered. Submit anyway?")) return;
+      submitted = true;
+      document.getElementById("submit").disabled = true;
+
+      const attempts = buildAttempts();
+      const payload = {
+        student_id: SET_CONFIG.student_id,
+        set_id: SET_CONFIG.set_id,
+        attempts: attempts
+      };
+
+      let summary = null;
+      let error = null;
+      try {
+        const resp = await fetch(SET_CONFIG.webhook_url + "/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + SET_CONFIG.webhook_secret
+          },
+          body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          summary = data.summary || null;
+        } else {
+          error = "Server returned " + resp.status;
+        }
+      } catch (e) {
+        error = e.message || String(e);
+      }
+
+      showResults(attempts, summary, error, payload);
+    }
+
+    function showResults(attempts, summary, error, payload) {
+      document.getElementById("question-container").hidden = true;
+      document.getElementById("controls").hidden = true;
+      document.getElementById("review-pane").hidden = true;
+      const out = document.getElementById("results");
+      out.hidden = false;
+
+      const correct = attempts.filter((a) => a.correct).length;
+      const total = attempts.length;
+      const pct = total ? Math.round((correct / total) * 100) : 0;
+
+      let html = "<h2>Results</h2>";
+      html += '<div class="summary-row"><span>Score</span><strong>' + correct + ' / ' + total + ' (' + pct + '%)</strong></div>';
+
+      if (summary && summary.by_skill) {
+        html += "<h3>By skill</h3>";
+        for (const [skill, stats] of Object.entries(summary.by_skill)) {
+          html += '<div class="summary-row"><span>' + escapeHtml(skill) + '</span><span>' + stats.correct + ' / ' + stats.total + '</span></div>';
+        }
+      }
+      if (summary && typeof summary.resurface_accuracy !== "undefined" && summary.resurface_accuracy !== null) {
+        const ra = summary.resurface_accuracy;
+        html += '<div class="summary-row"><span>Resurfaced accuracy</span><span>' + ra.correct + ' / ' + ra.total + '</span></div>';
+      }
+
+      html += "<h3>Per-question</h3>";
+      attempts.forEach((a, i) => {
+        const q = QUESTIONS[i];
+        const status = a.selected === null ? "skipped" : (a.correct ? "✓ correct" : "✗ incorrect");
+        html += '<details><summary>' + (i + 1) + '. ' + status + ' (your answer: ' + (a.selected || "—") + ', correct: ' + q.answer_key + ')</summary>';
+        html += '<div class="explanation">' + q.explanation_html + '</div></details>';
+      });
+
+      if (error) {
+        // Submission failed — provide the payload as a copyable fallback code.
+        html += '<h3>Submission failed</h3>';
+        html += '<p>The webhook returned an error: <code>' + escapeHtml(error) + '</code>. ';
+        html += 'Copy the code below and send it to your tutor.</p>';
+        const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        html += '<div class="fallback-code">' + code + '</div>';
+      }
+
+      out.innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => (
+        {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]
+      ));
+    }
+
+    // ---- wire up ----
+    document.getElementById("prev").onclick = () => move(-1);
+    document.getElementById("next").onclick = () => move(1);
+    document.getElementById("mark").onclick = toggleMark;
+    document.getElementById("review-toggle").onclick = toggleReview;
+    document.getElementById("submit").onclick = submitSet;
+
+    renderQuestion();
+  })();
   </script>
 </body>
 </html>
